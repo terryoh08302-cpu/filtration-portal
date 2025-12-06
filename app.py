@@ -79,7 +79,7 @@ header_html = f"""
 
 .portal-logo img {{
   display: block;
-  max-height: 150px;   /* 필요하면 숫자만 살짝 조정해서 맞추면 됨 */
+  max-height: 180px;   /* 필요하면 숫자만 살짝 조정해서 맞추면 됨 */
   height: auto;
   margin-top: -10px;    /* 제목과 비슷한 높이에서 시작 */
 }}
@@ -118,7 +118,7 @@ header_html = f"""
   .portal-header {{
     flex-direction: column;  /* 모바일에서는 위아래로 쌓기 */
     align-items: flex-start;
-    gap: 12px;
+    gap: 6px;
   }}
 
   .portal-logo img {{
