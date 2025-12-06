@@ -1,4 +1,7 @@
 import streamlit as st
+import pandas as pd
+...
+st.write("DEBUG SECRETS:", st.secrets)
 
 # ----- 로그인 기능 함수 -----
 def check_password():
