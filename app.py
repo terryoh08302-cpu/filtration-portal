@@ -15,7 +15,7 @@ LOGO_PATH = Path("logo.png")  # 같은 폴더에 logo.png 넣으면 사용됨
 # 개발 중에 CSV 바꿀 때 바로 반영 안 되면,
 # 아래 @st.cache_data 를 잠깐 주석 처리하거나
 # 메뉴에서 Clear cache + Rerun 해주면 됨.
-@st.cache_data
+# @st.cache_data
 def load_data():
     """
     reports.csv 컬럼 구조 예시
