@@ -12,10 +12,24 @@ st.set_page_config(
 LOGO_PATH = Path("logo.png")  # 같은 폴더에 logo.png 넣으면 사용됨
 
 
+# 개발 중에 CSV 바꿀 때 바로 반영 안 되면,
+# 아래 @st.cache_data 를 잠깐 주석 처리하거나
+# 메뉴에서 Clear cache + Rerun 해주면 됨.
 @st.cache_data
 def load_data():
-    # reports.csv 구조:
-    # customer, vpc_part, item_description, media_color, date, test_no, format, notes, url
+    """
+    reports.csv 컬럼 구조 예시
+    ---------------------------------
+    customer,
+    vpc_part,
+    item_description,
+    media_color,
+    date,
+    test_no,
+    format,
+    notes,
+    url
+    """
     df = pd.read_csv("reports.csv")
 
     # 문자열 컬럼은 공백으로 채워서 에러 방지
@@ -232,26 +246,23 @@ st.subheader("Results")
 
 table_df = filtered.copy()
 
-# url -> File 컬럼으로 바꾸고, 표시용 이름들도 바꿔주기
-if "url" in table_df.columns:
-    table_df = table_df.rename(columns={"url": "File"})
+# 1) 원본 컬럼 이름 → 사람이 보기 좋은 이름으로 변경
+table_df = table_df.rename(
+    columns={
+        "customer": "Customer",
+        "vpc_part": "VPC Part#",
+        "item_description": "Item Description",
+        "media_color": "Media Color",
+        "date": "Date",
+        "test_no": "Test No.",
+        "format": "Format",
+        "notes": "Notes",
+        "url": "File",
+    }
+)
 
-# 사람이 보게 될 컬럼 이름 (헤더)
-rename_map = {
-    "customer": "Customer",
-    "vpc_part": "VPC Part#",
-    "item_description": "Item Description",
-    "media_color": "Media Color",
-    "date": "Date",
-    "test_no": "Test No.",
-    "format": "Format",
-    "notes": "Notes",
-    "File": "File",
-}
-table_df = table_df.rename(columns=rename_map)
-
-# 컬럼 순서 정의 (원하는 순서로 배열)
-desired_cols = [
+# 2) 컬럼 순서 고정
+cols_in_order = [
     "Customer",
     "VPC Part#",
     "Item Description",
@@ -262,9 +273,10 @@ desired_cols = [
     "Notes",
     "File",
 ]
-existing_cols = [c for c in desired_cols if c in table_df.columns]
-table_df = table_df[existing_cols]
+cols_in_order = [c for c in cols_in_order if c in table_df.columns]
+table_df = table_df[cols_in_order]
 
+# 3) File 컬럼을 링크 버튼처럼 보이게
 if "File" in table_df.columns:
     st.dataframe(
         table_df,
@@ -272,8 +284,8 @@ if "File" in table_df.columns:
         hide_index=True,
         column_config={
             "File": st.column_config.LinkColumn(
-                "File",                       # 헤더 이름
-                display_text="📎 File Download",  # 버튼 안에 보이는 글자
+                "File",                         # 헤더 이름
+                display_text="📎 File Download",  # 셀에 보이는 텍스트
                 help="Download / open file",
             )
         },
