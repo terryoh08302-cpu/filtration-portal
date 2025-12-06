@@ -118,7 +118,7 @@ header_html = f"""
   .portal-header {{
     flex-direction: column;  /* 모바일에서는 위아래로 쌓기 */
     align-items: flex-start;
-    gap: 6px;
+    gap: 5px;
   }}
 
   .portal-logo img {{
