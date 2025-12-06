@@ -11,49 +11,6 @@ LOGO_PATH = "logo.png"
 CSV_PATH = "reports.csv"
 
 
-# ===================== 로그인 함수 =====================
-def check_password():
-    """st.secrets의 auth.username / auth.password로 로그인 검증"""
-
-    # 시크릿 존재 확인
-    if "auth" not in st.secrets or \
-       "username" not in st.secrets["auth"] or \
-       "password" not in st.secrets["auth"]:
-        st.error(
-            "⚠️ 로그인 설정이 되어 있지 않습니다.\n"
-            "Streamlit secrets에 [auth] username / password 를 먼저 등록해 주세요."
-        )
-        st.stop()
-
-    AUTH_USER = st.secrets["auth"]["username"]
-    AUTH_PASS = st.secrets["auth"]["password"]
-
-    def password_entered():
-        if (
-            st.session_state["username"] == AUTH_USER
-            and st.session_state["password"] == AUTH_PASS
-        ):
-            st.session_state["authenticated"] = True
-        else:
-            st.session_state["authenticated"] = False
-            st.error("❌ Incorrect username or password")
-
-    if st.session_state.get("authenticated"):
-        return True
-
-    st.title("🔐 Secure Login")
-    st.text_input("Username:", key="username")
-    st.text_input("Password:", type="password", key="password")
-    st.button("Login", on_click=password_entered)
-
-    return False
-
-
-# ===================== 로그인 체크 =====================
-if not check_password():
-    st.stop()
-
-
 # ===================== 스타일(CSS) =====================
 st.markdown(
     """
@@ -127,6 +84,9 @@ st.markdown(
 def load_data():
     df = pd.read_csv(CSV_PATH)
 
+    # 컬럼 이름을 전부 소문자 + 양쪽 공백 제거
+    df.columns = [c.strip().lower() for c in df.columns]
+
     # 문자열 컬럼은 공백으로 채워서 에러 방지
     for col in ["customer", "project", "report_type", "file_name", "format", "notes"]:
         if col in df.columns:
@@ -142,6 +102,10 @@ def load_data():
 
 
 df = load_data()
+
+
+def has_col(col: str) -> bool:
+    return col in df.columns
 
 
 # ===================== 헤더 =====================
@@ -163,21 +127,23 @@ st.markdown(
 st.markdown("---")
 
 
-# ========== 사이드바 필터 (컬럼이 있을 때만) ==========
+# ===================== 사이드바 필터 =====================
 st.sidebar.header("Filters")
 
-def options_for(col_name: str):
-    """해당 컬럼이 있으면 옵션 리스트, 없으면 None"""
-    if col_name not in df.columns:
+
+def build_options(col_name: str):
+    """해당 컬럼이 있으면 옵션 리스트, 없으면 None 반환"""
+    if not has_col(col_name):
         return None
-    vals = [v for v in df[col_name].unique().tolist() if pd.notna(v) and str(v) != ""]
-    return ["All"] + sorted(map(str, vals))
+    vals = df[col_name].dropna().astype(str)
+    vals = [v for v in vals.unique().tolist() if v.strip() != ""]
+    return ["All"] + sorted(vals)
 
 
-customer_opts = options_for("customer")
-project_opts = options_for("project")
-file_name_opts = options_for("file_name")
-report_type_opts = options_for("report_type")
+customer_opts = build_options("customer")
+project_opts = build_options("project")
+file_name_opts = build_options("file_name")
+report_type_opts = build_options("report_type")
 
 selected_customer = (
     st.sidebar.selectbox("Customer", customer_opts)
@@ -199,7 +165,7 @@ selected_report_type = (
 search_text = st.sidebar.text_input("Search (file name, project, notes)")
 
 
-# ========== 필터 적용 ==========
+# ===================== 필터 적용 =====================
 filtered = df.copy()
 
 if customer_opts and selected_customer and selected_customer != "All":
@@ -219,17 +185,17 @@ if search_text:
 
     file_series = (
         filtered["file_name"].astype(str)
-        if "file_name" in filtered.columns
+        if has_col("file_name")
         else pd.Series([""] * len(filtered), index=filtered.index)
     )
     proj_series = (
         filtered["project"].astype(str)
-        if "project" in filtered.columns
+        if has_col("project")
         else pd.Series([""] * len(filtered), index=filtered.index)
     )
     notes_series = (
         filtered["notes"].astype(str)
-        if "notes" in filtered.columns
+        if has_col("notes")
         else pd.Series([""] * len(filtered), index=filtered.index)
     )
 
@@ -241,12 +207,12 @@ if search_text:
     filtered = filtered[mask]
 
 
-# ========== 결과 테이블 ==========
+# ===================== 결과 테이블 =====================
 st.subheader("Results")
 st.dataframe(filtered, use_container_width=True)
 
 
-# ========== Open Reports ==========
+# ===================== Open Reports =====================
 st.markdown("---")
 st.subheader("Open Reports")
 
@@ -257,7 +223,15 @@ else:
         file_name = str(row.get("file_name", "")).strip() or "(no name)"
         customer = str(row.get("customer", "")).strip()
         date = str(row.get("date", "")).strip()
-        label = f"{file_name} ({customer}, {date})".strip(" ()")
+
+        # label 깔끔하게: 비어있는 부분은 자동으로 빠지게
+        parts = [file_name]
+        if customer:
+            parts.append(customer)
+        if date:
+            parts.append(date)
+        label = " (" + ", ".join(parts[1:]) + ")" if len(parts) > 1 else ""
+        label = parts[0] + label
 
         url = str(row.get("url", "")).strip()
 
