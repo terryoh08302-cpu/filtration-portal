@@ -1,87 +1,106 @@
 import streamlit as st
 import pandas as pd
 
-# 페이지 설정
+# ----- 기본 설정 -----
 st.set_page_config(
     page_title="Filtration Test Report Portal",
-    layout="wide"
+    layout="wide",
 )
 
-st.title("🧪 Filtration Test Report Portal")
-st.write("Browse and access filtration test reports (PDF / Excel) remotely.")
+LOGO_PATH = "logo.png"  # 같은 폴더에 logo.png 넣으면 사용됨
 
 @st.cache_data
 def load_data():
-    # 모든 컬럼을 문자열(str)로 읽어서 타입 문제 완전히 방지
-    df = pd.read_csv("reports.csv", dtype=str)
+    df = pd.read_csv("reports.csv")
 
-    # 혹시 누락된 컬럼이 있으면 빈 문자열로 생성
-    expected_cols = ["customer", "project", "report_type", "date",
-                     "file_name", "url", "format", "notes"]
-    for col in expected_cols:
-        if col not in df.columns:
-            df[col] = ""
+    # 문자열 컬럼은 공백으로 채워서 에러 방지
+    for col in ["customer", "project", "report_type", "file_name", "format", "notes"]:
+        if col in df.columns:
+            df[col] = df[col].fillna("")
 
-    # 결측치(NaN)를 전부 빈 문자열로
-    df = df.fillna("")
+    if "date" in df.columns:
+        df["date"] = df["date"].astype(str).fillna("")
+
     return df
+
 
 df = load_data()
 
-# --- Sidebar filters ---
+# ----- 상단 로고 + 타이틀 -----
+col_logo, col_title = st.columns([1, 4])
+
+with col_logo:
+    try:
+        st.image(LOGO_PATH, use_container_width=True)
+    except Exception:
+        st.write("")  # 로고 파일이 없어도 에러 안 나게
+
+with col_title:
+    st.title("Filtration Test Report Portal")
+    st.write("Browse and access filtration test reports (PDF / Excel) remotely.")
+
+st.markdown("---")
+
+# ----- 사이드바 필터 -----
 st.sidebar.header("Filters")
 
-# 고객/리포트 타입 목록 만들기 (모두 문자열이므로 에러 안 남)
-customers = ["All"] + sorted(df["customer"].unique().tolist())
-selected_customer = st.sidebar.selectbox("Customer", customers)
+# 각 필터용 옵션 리스트 만들기 (비어있는 값은 제외)
+customers = ["All"] + sorted([c for c in df["customer"].unique().tolist() if c])
+projects = ["All"] + sorted([p for p in df["project"].unique().tolist() if p])
+file_names = ["All"] + sorted([f for f in df["file_name"].unique().tolist() if f])
+report_types = ["All"] + sorted([r for r in df["report_type"].unique().tolist() if r])
 
-report_types = ["All"] + sorted(df["report_type"].unique().tolist())
+selected_customer = st.sidebar.selectbox("Customer", customers)
+selected_project = st.sidebar.selectbox("Project", projects)
+selected_file_name = st.sidebar.selectbox("File name", file_names)
 selected_report_type = st.sidebar.selectbox("Report Type", report_types)
 
 search_text = st.sidebar.text_input("Search (file name, project, notes)")
 
-# --- Filtering logic ---
+# ----- 필터 적용 -----
 filtered = df.copy()
 
 if selected_customer != "All":
     filtered = filtered[filtered["customer"] == selected_customer]
 
+if selected_project != "All":
+    filtered = filtered[filtered["project"] == selected_project]
+
+if selected_file_name != "All":
+    filtered = filtered[filtered["file_name"] == selected_file_name]
+
 if selected_report_type != "All":
     filtered = filtered[filtered["report_type"] == selected_report_type]
 
 if search_text:
-    search_lower = search_text.lower()
-    filtered = filtered[
-        filtered["file_name"].str.lower().str.contains(search_lower)
-        | filtered["project"].str.lower().str.contains(search_lower)
-        | filtered["notes"].str.lower().str.contains(search_lower)
-    ]
+    search_text_lower = search_text.lower()
+    mask = (
+        filtered["file_name"].str.lower().str.contains(search_text_lower, na=False)
+        | filtered["project"].str.lower().str.contains(search_text_lower, na=False)
+        | filtered.get("notes", "").astype(str).str.lower().str.contains(search_text_lower, na=False)
+    )
+    filtered = filtered[mask]
 
+# ----- 결과 테이블 -----
 st.subheader("Results")
+st.dataframe(filtered, use_container_width=True)
+
+# ----- Open Reports 섹션 -----
+st.markdown("---")
+st.subheader("Open Reports")
 
 if filtered.empty:
-    st.info("No reports found with current filters.")
+    st.write("No reports match the selected filters.")
 else:
-    display_cols = ["customer", "project", "report_type", "date",
-                    "file_name", "format"]
-    st.dataframe(filtered[display_cols], use_container_width=True)
-
-    st.markdown("---")
-    st.markdown("### 🔗 Open Reports")
     for _, row in filtered.iterrows():
-        file_name = row.get("file_name", "")
-        customer = row.get("customer", "")
-        date = row.get("date", "")
-        url = row.get("url", "")
+        file_name = row.get("file_name", "").strip() or "(no name)"
+        customer = row.get("customer", "").strip()
+        date = row.get("date", "").strip()
+        label = f"{file_name} ({customer}, {date})"
 
-        # URL이 비어있지 않을 때만 링크 생성
-        if isinstance(url, str) and url.strip() != "":
-            st.markdown(
-                f"- **{file_name}** ({customer}, {date}) "
-                f"[Open]({url})",
-                unsafe_allow_html=True,
-            )
+        url = str(row.get("url", "")).strip()
+
+        if not url:
+            st.write(f"• {label} — (no URL)")
         else:
-            st.markdown(
-                f"- **{file_name}** ({customer}, {date}) — (no URL)"
-            )
+            st.markdown(f"• **{label}** – [Open]({url})")
