@@ -122,7 +122,7 @@ header_html = f"""
   }}
 
   .portal-logo img {{
-    max-height: 44px;
+    max-height: 150px;
     margin-top: 0;
   }}
 
