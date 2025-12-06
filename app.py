@@ -118,16 +118,17 @@ header_html = f"""
   .portal-header {{
     flex-direction: column;  /* 모바일에서는 위아래로 쌓기 */
     align-items: flex-start;
-    gap: -2px;
+    gap: 0px;
   }}
 
   .portal-logo img {{
     max-height: 180px;
-    margin-top: 0;
+    margin-top: -4;
   }}
 
   .portal-title {{
     font-size: 24px;
+    margin-top: -12px
   }}
 
   .portal-subtitle {{
