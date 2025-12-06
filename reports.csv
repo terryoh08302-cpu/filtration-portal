@@ -1,4 +1,2 @@
-customer,project,report_type,date,file_name,url,format,notes
-Blue Heaven,Media Effiency Test,Test Report,12/5/2025,25-708-1 dd,https://drive.google.com/file/d/1LNV_PxqdI147ogeMUl69IZ57EpKm0_rH/view?usp=sharing,PDF,MERV 7
-TEST,TEST,TEST,12/6/2025,TEST,,TEST,TEST
-TERRY,TERRY,TERRY,12/7/2025,TERRY,,TERRY,TERRY
+customer,vpc_part,item_description,media_color,date,test_no,format,notes,url
+Blue Heaven,LAM10-N100-F0067,100 / .67 oz ,White,12/5/2025,25-708-1,PDF,MERV 7,https://drive.google.com/file/d/1LNV_PxqdI147ogeMUl69IZ57EpKm0_rH/view?usp=sharing
