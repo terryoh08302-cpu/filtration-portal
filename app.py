@@ -9,89 +9,6 @@ st.set_page_config(
 
 LOGO_PATH = "logo.png"  # 같은 폴더에 logo.png 넣으면 사용됨
 
-# ----- 공통 스타일(CSS) 주입 -----
-st.markdown(
-    """
-    <style>
-    /* 페이지 전체 여백/폰트 */
-    .main {
-        padding-top: 1.5rem;
-    }
-    body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                     "Helvetica Neue", Arial, "Noto Sans KR", sans-serif;
-        color: #252733;
-    }
-
-    /* 헤더 전체 컨테이너 */
-    .header-container {
-        display: flex;
-        flex-direction: column;    /* 기본: 모바일은 세로 */
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 0.75rem;
-    }
-
-    /* 로고쪽 블럭 */
-    .hero-logo-block {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .hero-logo {
-        max-width: 220px;
-        width: 100%;
-        height: auto;
-        display: block;
-    }
-
-    .logo-caption {
-        margin-top: 0.4rem;
-        font-weight: 700;
-        color: #d70000;            /* 빨간 텍스트 */
-        font-size: 1.05rem;
-    }
-
-    /* 텍스트쪽 블럭 */
-    .hero-text h1 {
-        margin: 0;
-        font-size: 1.9rem;
-        font-weight: 800;
-        letter-spacing: 0.01em;
-    }
-
-    .hero-text p {
-        margin-top: 0.4rem;
-        margin-bottom: 0;
-        font-size: 1rem;
-        color: #555a6a;
-    }
-
-    /* 데스크탑 이상 화면에서 가로 정렬 + 로고 위로 약간 올리기 */
-    @media (min-width: 768px) {
-        .header-container {
-            flex-direction: row;      /* 가로 정렬 */
-            align-items: flex-start;  /* 로고를 좀 더 위쪽에 */
-            justify-content: flex-start;
-            gap: 2.5rem;
-        }
-
-        .hero-text h1 {
-            font-size: 2.4rem;
-        }
-
-        .hero-text p {
-            font-size: 1.05rem;
-        }
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-
-# ----- 데이터 로드 -----
 @st.cache_data
 def load_data():
     df = pd.read_csv("reports.csv")
@@ -104,35 +21,25 @@ def load_data():
     if "date" in df.columns:
         df["date"] = df["date"].astype(str).fillna("")
 
-    if "url" in df.columns:
-        df["url"] = df["url"].fillna("")
-
     return df
 
 
 df = load_data()
 
+# ----- 상단 로고 + 타이틀 -----
+col_logo, col_title = st.columns([1, 4])
 
-# ----- 상단 헤더 (로고 + 텍스트, 반응형) -----
-# Streamlit 안에서 HTML로 직접 그려서 구도 고정
-st.markdown(
-    f"""
-    <div class="header-container">
-        <div class="hero-logo-block">
-            <img src="{LOGO_PATH}" class="hero-logo" alt="VPC Group Inc. Logo">
-            <div class="logo-caption">Filtration Test Portal</div>
-        </div>
-        <div class="hero-text">
-            <h1>Filtration Test Report Portal</h1>
-            <p>Browse and access filtration test reports (PDF / Excel) remotely.</p>
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+with col_logo:
+    try:
+        st.image(LOGO_PATH, use_container_width=True)
+    except Exception:
+        st.write("")  # 로고 파일이 없어도 에러 안 나게
+
+with col_title:
+    st.title("Filtration Test Report Portal")
+    st.write("Browse and access filtration test reports (PDF / Excel) remotely.")
 
 st.markdown("---")
-
 
 # ----- 사이드바 필터 -----
 st.sidebar.header("Filters")
@@ -149,7 +56,6 @@ selected_file_name = st.sidebar.selectbox("File name", file_names)
 selected_report_type = st.sidebar.selectbox("Report Type", report_types)
 
 search_text = st.sidebar.text_input("Search (file name, project, notes)")
-
 
 # ----- 필터 적용 -----
 filtered = df.copy()
@@ -168,25 +74,16 @@ if selected_report_type != "All":
 
 if search_text:
     search_text_lower = search_text.lower()
-
-    # notes 컬럼이 없을 수도 있으니 안전하게 처리
-    if "notes" in filtered.columns:
-        notes_series = filtered["notes"].astype(str)
-    else:
-        notes_series = pd.Series([""] * len(filtered), index=filtered.index)
-
     mask = (
-        filtered["file_name"].astype(str).str.lower().str.contains(search_text_lower, na=False)
-        | filtered["project"].astype(str).str.lower().str.contains(search_text_lower, na=False)
-        | notes_series.str.lower().str.contains(search_text_lower, na=False)
+        filtered["file_name"].str.lower().str.contains(search_text_lower, na=False)
+        | filtered["project"].str.lower().str.contains(search_text_lower, na=False)
+        | filtered.get("notes", "").astype(str).str.lower().str.contains(search_text_lower, na=False)
     )
     filtered = filtered[mask]
-
 
 # ----- 결과 테이블 -----
 st.subheader("Results")
 st.dataframe(filtered, use_container_width=True)
-
 
 # ----- Open Reports 섹션 -----
 st.markdown("---")
@@ -196,9 +93,9 @@ if filtered.empty:
     st.write("No reports match the selected filters.")
 else:
     for _, row in filtered.iterrows():
-        file_name = str(row.get("file_name", "")).strip() or "(no name)"
-        customer = str(row.get("customer", "")).strip()
-        date = str(row.get("date", "")).strip()
+        file_name = row.get("file_name", "").strip() or "(no name)"
+        customer = row.get("customer", "").strip()
+        date = row.get("date", "").strip()
         label = f"{file_name} ({customer}, {date})"
 
         url = str(row.get("url", "")).strip()
