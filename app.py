@@ -1,4 +1,36 @@
 import streamlit as st
+
+# ----- 로그인 기능 함수 -----
+def check_password():
+
+    def password_entered():
+        if (
+            st.session_state["username"] == st.secrets["auth"]["username"]
+            and st.session_state["password"] == st.secrets["auth"]["password"]
+        ):
+            st.session_state["authenticated"] = True
+        else:
+            st.session_state["authenticated"] = False
+            st.error("❌ Incorrect username or password")
+
+    # 이미 로그인 한 경우
+    if st.session_state.get("authenticated"):
+        return True
+
+    # 로그인 폼
+    st.title("🔒 Secure Login")
+    st.text_input("Username:", key="username")
+    st.text_input("Password:", type="password", key="password")
+    st.button("Login", on_click=password_entered)
+
+    return False
+
+
+# ----- 로그인 체크 -----
+if not check_password():
+    st.stop()  # 로그인 실패하면 앱 실행 중단
+
+import streamlit as st
 import pandas as pd
 from pathlib import Path
 import base64
