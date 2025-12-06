@@ -79,16 +79,9 @@ header_html = f"""
 
 .portal-logo img {{
   display: block;
-  max-height: 150px;   /* 필요하면 숫자만 살짝 조정해서 맞추면 됨 */
+  max-height: 150px;   /* PC용 로고 크기 */
   height: auto;
-  margin-top: -10px;    /* 제목과 비슷한 높이에서 시작 */
-}}
-
-.portal-logo-subtext {{
-  margin-top: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--vpc-red);
+  margin-top: -10px;   /* 제목과 수평 맞추기 */
 }}
 
 .portal-title-block {{
@@ -123,12 +116,12 @@ header_html = f"""
 
   .portal-logo img {{
     max-height: 180px;
-    margin-top: -4;
+    margin-top: -4px;
   }}
 
   .portal-title {{
     font-size: 24px;
-    margin-top: -12px
+    margin-top: -12px;
   }}
 
   .portal-subtitle {{
@@ -222,9 +215,33 @@ if search_text:
 
     filtered = filtered[mask]
 
-# ----- 결과 테이블 -----
+# ----- 결과 테이블 (맨 오른쪽 VPC 링크 컬럼) -----
 st.subheader("Results")
-st.dataframe(filtered, use_container_width=True)
+
+table_df = filtered.copy()
+
+if "url" in table_df.columns:
+    # url 컬럼을 'VPC'로 표시하도록 변경
+    table_df = table_df.rename(columns={"url": "VPC"})
+
+    # 컬럼 순서: 기존 컬럼 + 맨 오른쪽 VPC
+    cols = [c for c in table_df.columns if c != "VPC"] + ["VPC"]
+    table_df = table_df[cols]
+
+    st.dataframe(
+        table_df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "VPC": st.column_config.LinkColumn(
+                "VPC",              # 테이블 헤더 이름
+                display_text="VPC", # 셀에 보이는 텍스트
+                help="Open report",
+            )
+        },
+    )
+else:
+    st.dataframe(table_df, use_container_width=True, hide_index=True)
 
 # ----- Open Reports 섹션 -----
 st.markdown("---")
@@ -251,4 +268,4 @@ else:
         if not url:
             st.write(f"• {label} — (no URL)")
         else:
-            st.markdown(f"• **{label}** – [Open]({url})")
+            st.markdown(f"• **{label}** – [VPC]({url})")
