@@ -14,10 +14,20 @@ LOGO_PATH = Path("logo.png")  # 같은 폴더에 logo.png 넣으면 사용됨
 
 @st.cache_data
 def load_data():
+    # reports.csv 구조:
+    # customer, vpc_part, item_description, media_color, date, test_no, format, notes, url
     df = pd.read_csv("reports.csv")
 
     # 문자열 컬럼은 공백으로 채워서 에러 방지
-    for col in ["customer", "project", "report_type", "file_name", "format", "notes"]:
+    for col in [
+        "customer",
+        "vpc_part",
+        "item_description",
+        "media_color",
+        "test_no",
+        "format",
+        "notes",
+    ]:
         if col in df.columns:
             df[col] = df[col].fillna("")
 
@@ -162,16 +172,18 @@ def unique_values(col_name: str):
 
 
 customers = unique_values("customer")
-projects = unique_values("project")
-file_names = unique_values("file_name")
-report_types = unique_values("report_type")
+vpc_parts = unique_values("vpc_part")
+test_nos = unique_values("test_no")
+media_colors = unique_values("media_color")
 
 selected_customer = st.sidebar.selectbox("Customer", customers)
-selected_project = st.sidebar.selectbox("Project", projects)
-selected_file_name = st.sidebar.selectbox("File name", file_names)
-selected_report_type = st.sidebar.selectbox("Report Type", report_types)
+selected_vpc_part = st.sidebar.selectbox("VPC Part#", vpc_parts)
+selected_test_no = st.sidebar.selectbox("Test No.", test_nos)
+selected_media_color = st.sidebar.selectbox("Media Color", media_colors)
 
-search_text = st.sidebar.text_input("Search (file name, project, notes)")
+search_text = st.sidebar.text_input(
+    "Search (Test No., Item Description, Notes)"
+)
 
 # ----- 필터 적용 -----
 filtered = df.copy()
@@ -179,26 +191,26 @@ filtered = df.copy()
 if selected_customer != "All" and "customer" in filtered.columns:
     filtered = filtered[filtered["customer"] == selected_customer]
 
-if selected_project != "All" and "project" in filtered.columns:
-    filtered = filtered[filtered["project"] == selected_project]
+if selected_vpc_part != "All" and "vpc_part" in filtered.columns:
+    filtered = filtered[filtered["vpc_part"] == selected_vpc_part]
 
-if selected_file_name != "All" and "file_name" in filtered.columns:
-    filtered = filtered[filtered["file_name"] == selected_file_name]
+if selected_test_no != "All" and "test_no" in filtered.columns:
+    filtered = filtered[filtered["test_no"] == selected_test_no]
 
-if selected_report_type != "All" and "report_type" in filtered.columns:
-    filtered = filtered[filtered["report_type"] == selected_report_type]
+if selected_media_color != "All" and "media_color" in filtered.columns:
+    filtered = filtered[filtered["media_color"] == selected_media_color]
 
 if search_text:
     search_text_lower = search_text.lower()
 
-    file_col = (
-        filtered["file_name"].astype(str)
-        if "file_name" in filtered.columns
+    test_col = (
+        filtered["test_no"].astype(str)
+        if "test_no" in filtered.columns
         else pd.Series("", index=filtered.index)
     )
-    project_col = (
-        filtered["project"].astype(str)
-        if "project" in filtered.columns
+    desc_col = (
+        filtered["item_description"].astype(str)
+        if "item_description" in filtered.columns
         else pd.Series("", index=filtered.index)
     )
     notes_col = (
@@ -208,35 +220,61 @@ if search_text:
     )
 
     mask = (
-        file_col.str.lower().str.contains(search_text_lower, na=False)
-        | project_col.str.lower().str.contains(search_text_lower, na=False)
+        test_col.str.lower().str.contains(search_text_lower, na=False)
+        | desc_col.str.lower().str.contains(search_text_lower, na=False)
         | notes_col.str.lower().str.contains(search_text_lower, na=False)
     )
 
     filtered = filtered[mask]
 
-# ----- 결과 테이블 (맨 오른쪽 VPC 링크 컬럼) -----
+# ----- 결과 테이블 (컬럼 이름/순서 + File 링크) -----
 st.subheader("Results")
 
 table_df = filtered.copy()
 
+# url -> File 컬럼으로 바꾸고, 표시용 이름들도 바꿔주기
 if "url" in table_df.columns:
-    # url 컬럼을 'VPC'로 표시하도록 변경
-    table_df = table_df.rename(columns={"url": "VPC"})
+    table_df = table_df.rename(columns={"url": "File"})
 
-    # 컬럼 순서: 기존 컬럼 + 맨 오른쪽 VPC
-    cols = [c for c in table_df.columns if c != "VPC"] + ["VPC"]
-    table_df = table_df[cols]
+# 사람이 보게 될 컬럼 이름 (헤더)
+rename_map = {
+    "customer": "Customer",
+    "vpc_part": "VPC Part#",
+    "item_description": "Item Description",
+    "media_color": "Media Color",
+    "date": "Date",
+    "test_no": "Test No.",
+    "format": "Format",
+    "notes": "Notes",
+    "File": "File",
+}
+table_df = table_df.rename(columns=rename_map)
 
+# 컬럼 순서 정의 (원하는 순서로 배열)
+desired_cols = [
+    "Customer",
+    "VPC Part#",
+    "Item Description",
+    "Media Color",
+    "Date",
+    "Test No.",
+    "Format",
+    "Notes",
+    "File",
+]
+existing_cols = [c for c in desired_cols if c in table_df.columns]
+table_df = table_df[existing_cols]
+
+if "File" in table_df.columns:
     st.dataframe(
         table_df,
         use_container_width=True,
         hide_index=True,
         column_config={
-            "VPC": st.column_config.LinkColumn(
-                "VPC",              # 테이블 헤더 이름
-                display_text="VPC", # 셀에 보이는 텍스트
-                help="Open report",
+            "File": st.column_config.LinkColumn(
+                "File",                       # 헤더 이름
+                display_text="📎 File Download",  # 버튼 안에 보이는 글자
+                help="Download / open file",
             )
         },
     )
@@ -251,14 +289,17 @@ if filtered.empty:
     st.write("No reports match the selected filters.")
 else:
     for _, row in filtered.iterrows():
-        file_name = str(row.get("file_name", "")).strip() or "(no name)"
+        test_no = str(row.get("test_no", "")).strip() or "(no Test No.)"
         customer = str(row.get("customer", "")).strip()
+        vpc_part = str(row.get("vpc_part", "")).strip()
         date = str(row.get("date", "")).strip()
 
         # 표시 라벨 만들기
-        label_parts = [file_name]
+        label_parts = [test_no]
         if customer:
             label_parts.append(customer)
+        if vpc_part:
+            label_parts.append(vpc_part)
         if date:
             label_parts.append(date)
         label = " | ".join(label_parts)
@@ -266,6 +307,6 @@ else:
         url = str(row.get("url", "")).strip()
 
         if not url:
-            st.write(f"• {label} — (no URL)")
+            st.write(f"• {label} — (no file)")
         else:
-            st.markdown(f"• **{label}** – [VPC]({url})")
+            st.markdown(f"• **{label}** – [📎 File Download]({url})")
