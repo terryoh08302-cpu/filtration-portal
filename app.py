@@ -140,9 +140,6 @@ header_html = f"""
   <div class="portal-header">
     <div class="portal-logo">
       {logo_img_tag}
-      <div class="portal-logo-subtext">
-        Filtration Team &mdash; USA
-      </div>
     </div>
     <div class="portal-title-block">
       <h1 class="portal-title">Filtration Test Report Portal</h1>
