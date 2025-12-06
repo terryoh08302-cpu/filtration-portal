@@ -79,7 +79,7 @@ header_html = f"""
 
 .portal-logo img {{
   display: block;
-  max-height: 100px;   /* 필요하면 숫자만 살짝 조정해서 맞추면 됨 */
+  max-height: 150px;   /* 필요하면 숫자만 살짝 조정해서 맞추면 됨 */
   height: auto;
   margin-top: 4px;    /* 제목과 비슷한 높이에서 시작 */
 }}
