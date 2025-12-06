@@ -81,7 +81,7 @@ header_html = f"""
   display: block;
   max-height: 150px;   /* 필요하면 숫자만 살짝 조정해서 맞추면 됨 */
   height: auto;
-  margin-top: 4px;    /* 제목과 비슷한 높이에서 시작 */
+  margin-top: -5px;    /* 제목과 비슷한 높이에서 시작 */
 }}
 
 .portal-logo-subtext {{
