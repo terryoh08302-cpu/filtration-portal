@@ -339,6 +339,18 @@ else:
         else:
             st.write("No 'media_color' column for analytics.")
 
+ # 3) 월별 테스트 개수 (전체 폭 사용)
+    if "Month" in chart_df.columns:
+        month_counts = (
+            chart_df["Month"]
+            .value_counts()
+            .sort_index()
+            .reset_index()
+            .rename(columns={"index": "Month", "Month": "Count"})
+        )
+        st.markdown("**Reports over Time (by Month)**")
+        st.line_chart(month_counts, x="Month", y="Count")
+
 # ----- Open Reports 섹션 -----
 st.markdown("---")
 st.subheader("Open Reports")
