@@ -10,11 +10,9 @@ st.set_page_config(
 )
 
 LOGO_PATH = Path("logo.png")  # 같은 폴더에 logo.png 넣으면 사용됨
+SPECIAL_EXCEL_PATH = Path("FD Blue Heaven Test Results2.xlsx")  # ✅ 항상 열어둘 엑셀
 
 
-# 개발 중에 CSV 바꿀 때 바로 반영 안 되면,
-# 아래 @st.cache_data 를 잠깐 주석 처리하거나
-# 메뉴에서 Clear cache + Rerun 해주면 됨.
 # @st.cache_data
 def load_data():
     """
@@ -89,7 +87,7 @@ header_html = f"""
 
 .portal-header {{
   display: flex;
-  align-items: flex-start;  /* 로고 상단을 제목 상단과 맞추기 */
+  align-items: flex-start;
   gap: 24px;
   flex-wrap: wrap;
 }}
@@ -103,9 +101,9 @@ header_html = f"""
 
 .portal-logo img {{
   display: block;
-  max-height: 150px;   /* PC용 로고 크기 */
+  max-height: 150px;
   height: auto;
-  margin-top: -10px;   /* 제목과 수평 맞추기 */
+  margin-top: -10px;
 }}
 
 .portal-title-block {{
@@ -126,14 +124,13 @@ header_html = f"""
   color: var(--text-gray);
 }}
 
-/* 모바일/태블릿 대응 */
 @media (max-width: 768px) {{
   .page-wrapper {{
     padding: 4px 0 12px 0;
   }}
 
   .portal-header {{
-    flex-direction: column;  /* 모바일에서는 위아래로 쌓기 */
+    flex-direction: column;
     align-items: flex-start;
     gap: 0px;
   }}
@@ -322,3 +319,22 @@ else:
             st.write(f"• {label} — (no file)")
         else:
             st.markdown(f"• **{label}** – [📎 File Download]({url})")
+
+# ----- Special Excel: FD Blue Heaven Test Results2.xlsx -----
+st.markdown("---")
+st.subheader("FD Blue Heaven Test Results")
+
+if SPECIAL_EXCEL_PATH.exists():
+    try:
+        # 시트가 여러 개면 sheet_name=0 대신 시트 이름을 지정해도 됨
+        blue_df = pd.read_excel(SPECIAL_EXCEL_PATH)
+
+        st.caption(
+            "This table is always loaded from FD Blue Heaven Test Results2.xlsx"
+        )
+        st.dataframe(blue_df, use_container_width=True)
+
+    except Exception as e:
+        st.error(f"Error loading special Excel file: {e}")
+else:
+    st.info("FD Blue Heaven Test Results2.xlsx 파일을 앱 폴더에 넣어야 합니다.")
