@@ -293,66 +293,6 @@ if "File" in table_df.columns:
 else:
     st.dataframe(table_df, use_container_width=True, hide_index=True)
 
-# ----- Analytics Dashboard (현재 필터 기준 통계) -----
-st.markdown("---")
-st.subheader("Analytics (Current Filter)")
-
-if filtered.empty:
-    st.info("No data for analytics with current filters.")
-else:
-    chart_df = filtered.copy()
-
-    # 0) 날짜 → 월로 변환 (있을 때만)
-    if "date" in chart_df.columns:
-        chart_df["date_parsed"] = pd.to_datetime(
-            chart_df["date"], errors="coerce"
-        )
-
-    col1, col2 = st.columns(2)
-
-    # 1) 고객별 보고서 개수
-    with col1:
-        if "customer" in chart_df.columns:
-            customer_counts = (
-                chart_df.groupby("customer")
-                .size()
-                .reset_index(name="Count")
-                .rename(columns={"customer": "Customer"})
-            )
-            st.markdown("**Reports by Customer**")
-            st.bar_chart(customer_counts, x="Customer", y="Count")
-        else:
-            st.write("No 'customer' column for analytics.")
-
-    # 2) Media Color 별 보고서 개수
-    with col2:
-        if "media_color" in chart_df.columns:
-            media_counts = (
-                chart_df.groupby("media_color")
-                .size()
-                .reset_index(name="Count")
-                .rename(columns={"media_color": "Media Color"})
-            )
-            st.markdown("**Reports by Media Color**")
-            st.bar_chart(media_counts, x="Media Color", y="Count")
-        else:
-            st.write("No 'media_color' column for analytics.")
-
-    # 3) 월별 테스트 개수 (전체 폭 사용)
-    if "date_parsed" in chart_df.columns:
-        month_counts = (
-            chart_df.dropna(subset=["date_parsed"])
-            .groupby(chart_df["date_parsed"].dt.to_period("M"))
-            .size()
-            .reset_index(name="Count")
-        )
-        month_counts = month_counts.rename(columns={"date_parsed": "Month"})
-        month_counts["Month"] = month_counts["Month"].astype(str)
-
-        st.markdown("**Reports over Time (by Month)**")
-        st.line_chart(month_counts, x="Month", y="Count")
-
-
 # ----- Open Reports 섹션 -----
 st.markdown("---")
 st.subheader("Open Reports")
