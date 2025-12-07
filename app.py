@@ -3,18 +3,22 @@ import pandas as pd
 from pathlib import Path
 import base64
 
-# ----- 기본 설정 -----
+# =========================
+# 기본 설정 & 경로
+# =========================
 st.set_page_config(
     page_title="Filtration Test Report Portal",
     layout="wide",
 )
 
-LOGO_PATH = Path("logo.png")  # 같은 폴더에 logo.png 넣으면 사용됨
-SPECIAL_EXCEL_PATH = Path("FD Blue Heaven Test Results2.xlsx")  # ✅ 항상 열어둘 엑셀
+LOGO_PATH = Path("logo.png")  # 로고 파일(옵션)
+SPECIAL_EXCEL_PATH = Path("FD Blue Heaven Test Results2.xlsx")  # 항상 보여줄 엑셀
 
 
-# @st.cache_data
-def load_data():
+# =========================
+# 데이터 로드 함수
+# =========================
+def load_reports() -> pd.DataFrame:
     """
     reports.csv 컬럼 구조 예시
     ---------------------------------
@@ -60,281 +64,288 @@ def get_logo_base64() -> str:
         return base64.b64encode(f.read()).decode("utf-8")
 
 
-# 데이터 로드
-df = load_data()
+# =========================
+# 상단 헤더 UI
+# =========================
+def render_header():
+    logo_b64 = get_logo_base64()
+    logo_img_tag = (
+        f'<img src="data:image/png;base64,{logo_b64}" alt="VPC Logo" />'
+        if logo_b64
+        else ""
+    )
 
-# ----- 상단 커스텀 헤더 (HTML + CSS) -----
-logo_b64 = get_logo_base64()
-logo_img_tag = (
-    f'<img src="data:image/png;base64,{logo_b64}" alt="VPC Logo" />'
-    if logo_b64
-    else ""
-)
+    header_html = f"""
+    <style>
+    :root {{
+      --vpc-blue: #004b8d;
+      --vpc-red: #d71920;
+      --text-gray: #555;
+    }}
 
-header_html = f"""
-<style>
-:root {{
-  --vpc-blue: #004b8d;
-  --vpc-red: #d71920;
-  --text-gray: #555;
-}}
+    .page-wrapper {{
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 8px 4px 16px 4px;
+    }}
 
-.page-wrapper {{
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 8px 4px 16px 4px;
-}}
+    .portal-header {{
+      display: flex;
+      align-items: flex-start;
+      gap: 24px;
+      flex-wrap: wrap;
+    }}
 
-.portal-header {{
-  display: flex;
-  align-items: flex-start;
-  gap: 24px;
-  flex-wrap: wrap;
-}}
+    .portal-logo {{
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }}
 
-.portal-logo {{
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}}
+    .portal-logo img {{
+      display: block;
+      max-height: 150px;
+      height: auto;
+      margin-top: -10px;
+    }}
 
-.portal-logo img {{
-  display: block;
-  max-height: 150px;
-  height: auto;
-  margin-top: -10px;
-}}
+    .portal-title-block {{
+      flex: 1;
+      min-width: 0;
+    }}
 
-.portal-title-block {{
-  flex: 1;
-  min-width: 0;
-}}
+    .portal-title {{
+      margin: 0;
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1.2;
+    }}
 
-.portal-title {{
-  margin: 0;
-  font-size: 32px;
-  font-weight: 700;
-  line-height: 1.2;
-}}
+    .portal-subtitle {{
+      margin: 6px 0 0;
+      font-size: 14px;
+      color: var(--text-gray);
+    }}
 
-.portal-subtitle {{
-  margin: 6px 0 0;
-  font-size: 14px;
-  color: var(--text-gray);
-}}
+    @media (max-width: 768px) {{
+      .page-wrapper {{
+        padding: 4px 0 12px 0;
+      }}
 
-@media (max-width: 768px) {{
-  .page-wrapper {{
-    padding: 4px 0 12px 0;
-  }}
+      .portal-header {{
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0px;
+      }}
 
-  .portal-header {{
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0px;
-  }}
+      .portal-logo img {{
+        max-height: 180px;
+        margin-top: -4px;
+      }}
 
-  .portal-logo img {{
-    max-height: 180px;
-    margin-top: -4px;
-  }}
+      .portal-title {{
+        font-size: 24px;
+        margin-top: -12px;
+      }}
 
-  .portal-title {{
-    font-size: 24px;
-    margin-top: -12px;
-  }}
+      .portal-subtitle {{
+        font-size: 13px;
+      }}
+    }}
+    </style>
 
-  .portal-subtitle {{
-    font-size: 13px;
-  }}
-}}
-</style>
-
-<div class="page-wrapper">
-  <div class="portal-header">
-    <div class="portal-logo">
-      {logo_img_tag}
+    <div class="page-wrapper">
+      <div class="portal-header">
+        <div class="portal-logo">
+          {logo_img_tag}
+        </div>
+        <div class="portal-title-block">
+          <h1 class="portal-title">Filtration Test Report Portal</h1>
+          <p class="portal-subtitle">
+            Browse and access filtration test reports (PDF / Excel) remotely.
+          </p>
+        </div>
+      </div>
     </div>
-    <div class="portal-title-block">
-      <h1 class="portal-title">Filtration Test Report Portal</h1>
-      <p class="portal-subtitle">
-        Browse and access filtration test reports (PDF / Excel) remotely.
-      </p>
-    </div>
-  </div>
-</div>
-"""
+    """
 
-# 헤더 출력
-st.markdown(header_html, unsafe_allow_html=True)
-st.markdown("---")
-
-# ----- 사이드바 필터 -----
-st.sidebar.header("Filters")
+    st.markdown(header_html, unsafe_allow_html=True)
+    st.markdown("---")
 
 
-def unique_values(col_name: str):
-    """컬럼에 있는 고유값 리스트 만들기 (비어있는 값 제거)"""
-    if col_name not in df.columns:
-        return ["All"]
-    values = [v for v in df[col_name].unique().tolist() if str(v).strip()]
-    return ["All"] + sorted(values)
+# =========================
+# 메인 앱
+# =========================
+def main():
+    # 1) 헤더
+    render_header()
 
+    # 2) reports.csv 로드
+    df = load_reports()
 
-customers = unique_values("customer")
-vpc_parts = unique_values("vpc_part")
-test_nos = unique_values("test_no")
-media_colors = unique_values("media_color")
+    # 3) 사이드바 필터
+    st.sidebar.header("Filters")
 
-selected_customer = st.sidebar.selectbox("Customer", customers)
-selected_vpc_part = st.sidebar.selectbox("VPC Part#", vpc_parts)
-selected_test_no = st.sidebar.selectbox("Test No.", test_nos)
-selected_media_color = st.sidebar.selectbox("Media Color", media_colors)
+    def unique_values(col_name: str):
+        if col_name not in df.columns:
+            return ["All"]
+        values = [v for v in df[col_name].unique().tolist() if str(v).strip()]
+        return ["All"] + sorted(values)
 
-search_text = st.sidebar.text_input(
-    "Search (Test No., Item Description, Notes)"
-)
+    customers = unique_values("customer")
+    vpc_parts = unique_values("vpc_part")
+    test_nos = unique_values("test_no")
+    media_colors = unique_values("media_color")
 
-# ----- 필터 적용 -----
-filtered = df.copy()
+    selected_customer = st.sidebar.selectbox("Customer", customers)
+    selected_vpc_part = st.sidebar.selectbox("VPC Part#", vpc_parts)
+    selected_test_no = st.sidebar.selectbox("Test No.", test_nos)
+    selected_media_color = st.sidebar.selectbox("Media Color", media_colors)
 
-if selected_customer != "All" and "customer" in filtered.columns:
-    filtered = filtered[filtered["customer"] == selected_customer]
-
-if selected_vpc_part != "All" and "vpc_part" in filtered.columns:
-    filtered = filtered[filtered["vpc_part"] == selected_vpc_part]
-
-if selected_test_no != "All" and "test_no" in filtered.columns:
-    filtered = filtered[filtered["test_no"] == selected_test_no]
-
-if selected_media_color != "All" and "media_color" in filtered.columns:
-    filtered = filtered[filtered["media_color"] == selected_media_color]
-
-if search_text:
-    search_text_lower = search_text.lower()
-
-    test_col = (
-        filtered["test_no"].astype(str)
-        if "test_no" in filtered.columns
-        else pd.Series("", index=filtered.index)
-    )
-    desc_col = (
-        filtered["item_description"].astype(str)
-        if "item_description" in filtered.columns
-        else pd.Series("", index=filtered.index)
-    )
-    notes_col = (
-        filtered["notes"].astype(str)
-        if "notes" in filtered.columns
-        else pd.Series("", index=filtered.index)
+    search_text = st.sidebar.text_input(
+        "Search (Test No., Item Description, Notes)"
     )
 
-    mask = (
-        test_col.str.lower().str.contains(search_text_lower, na=False)
-        | desc_col.str.lower().str.contains(search_text_lower, na=False)
-        | notes_col.str.lower().str.contains(search_text_lower, na=False)
+    # 4) 필터 적용
+    filtered = df.copy()
+
+    if selected_customer != "All" and "customer" in filtered.columns:
+        filtered = filtered[filtered["customer"] == selected_customer]
+
+    if selected_vpc_part != "All" and "vpc_part" in filtered.columns:
+        filtered = filtered[filtered["vpc_part"] == selected_vpc_part]
+
+    if selected_test_no != "All" and "test_no" in filtered.columns:
+        filtered = filtered[filtered["test_no"] == selected_test_no]
+
+    if selected_media_color != "All" and "media_color" in filtered.columns:
+        filtered = filtered[filtered["media_color"] == selected_media_color]
+
+    if search_text:
+        search_text_lower = search_text.lower()
+
+        test_col = (
+            filtered["test_no"].astype(str)
+            if "test_no" in filtered.columns
+            else pd.Series("", index=filtered.index)
+        )
+        desc_col = (
+            filtered["item_description"].astype(str)
+            if "item_description" in filtered.columns
+            else pd.Series("", index=filtered.index)
+        )
+        notes_col = (
+            filtered["notes"].astype(str)
+            if "notes" in filtered.columns
+            else pd.Series("", index=filtered.index)
+        )
+
+        mask = (
+            test_col.str.lower().str.contains(search_text_lower, na=False)
+            | desc_col.str.lower().str.contains(search_text_lower, na=False)
+            | notes_col.str.lower().str.contains(search_text_lower, na=False)
+        )
+
+        filtered = filtered[mask]
+
+    # 5) Results 테이블
+    st.subheader("Results")
+
+    table_df = filtered.copy()
+
+    table_df = table_df.rename(
+        columns={
+            "customer": "Customer",
+            "vpc_part": "VPC Part#",
+            "item_description": "Item Description",
+            "media_color": "Media Color",
+            "date": "Date",
+            "test_no": "Test No.",
+            "format": "Format",
+            "notes": "Notes",
+            "url": "File",
+        }
     )
 
-    filtered = filtered[mask]
+    cols_in_order = [
+        "Customer",
+        "VPC Part#",
+        "Item Description",
+        "Media Color",
+        "Date",
+        "Test No.",
+        "Format",
+        "Notes",
+        "File",
+    ]
+    cols_in_order = [c for c in cols_in_order if c in table_df.columns]
+    table_df = table_df[cols_in_order]
 
-# ----- 결과 테이블 (컬럼 이름/순서 + File 링크) -----
-st.subheader("Results")
+    if "File" in table_df.columns:
+        st.dataframe(
+            table_df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "File": st.column_config.LinkColumn(
+                    "File",
+                    display_text="📎 File Download",
+                    help="Download / open file",
+                )
+            },
+        )
+    else:
+        st.dataframe(table_df, use_container_width=True, hide_index=True)
 
-table_df = filtered.copy()
+    # 6) Open Reports 텍스트 리스트
+    st.markdown("---")
+    st.subheader("Open Reports")
 
-# 1) 원본 컬럼 이름 → 사람이 보기 좋은 이름으로 변경
-table_df = table_df.rename(
-    columns={
-        "customer": "Customer",
-        "vpc_part": "VPC Part#",
-        "item_description": "Item Description",
-        "media_color": "Media Color",
-        "date": "Date",
-        "test_no": "Test No.",
-        "format": "Format",
-        "notes": "Notes",
-        "url": "File",
-    }
-)
+    if filtered.empty:
+        st.write("No reports match the selected filters.")
+    else:
+        for _, row in filtered.iterrows():
+            test_no = str(row.get("test_no", "")).strip() or "(no Test No.)"
+            customer = str(row.get("customer", "")).strip()
+            vpc_part = str(row.get("vpc_part", "")).strip()
+            date = str(row.get("date", "")).strip()
 
-# 2) 컬럼 순서 고정
-cols_in_order = [
-    "Customer",
-    "VPC Part#",
-    "Item Description",
-    "Media Color",
-    "Date",
-    "Test No.",
-    "Format",
-    "Notes",
-    "File",
-]
-cols_in_order = [c for c in cols_in_order if c in table_df.columns]
-table_df = table_df[cols_in_order]
+            label_parts = [test_no]
+            if customer:
+                label_parts.append(customer)
+            if vpc_part:
+                label_parts.append(vpc_part)
+            if date:
+                label_parts.append(date)
+            label = " | ".join(label_parts)
 
-# 3) File 컬럼을 링크 버튼처럼 보이게
-if "File" in table_df.columns:
-    st.dataframe(
-        table_df,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "File": st.column_config.LinkColumn(
-                "File",                         # 헤더 이름
-                display_text="📎 File Download",  # 셀에 보이는 텍스트
-                help="Download / open file",
-            )
-        },
-    )
-else:
-    st.dataframe(table_df, use_container_width=True, hide_index=True)
+            url = str(row.get("url", "")).strip()
 
-# ----- Open Reports 섹션 -----
-st.markdown("---")
-st.subheader("Open Reports")
+            if not url:
+                st.write(f"• {label} — (no file)")
+            else:
+                st.markdown(f"• **{label}** – [📎 File Download]({url})")
 
-if filtered.empty:
-    st.write("No reports match the selected filters.")
-else:
-    for _, row in filtered.iterrows():
-        test_no = str(row.get("test_no", "")).strip() or "(no Test No.)"
-        customer = str(row.get("customer", "")).strip()
-        vpc_part = str(row.get("vpc_part", "")).strip()
-        date = str(row.get("date", "")).strip()
+    # 7) FD Blue Heaven Test Results2.xlsx 내용 항상 표시
+    st.markdown("---")
+    st.subheader("FD Blue Heaven Test Results")
 
-        # 표시 라벨 만들기
-        label_parts = [test_no]
-        if customer:
-            label_parts.append(customer)
-        if vpc_part:
-            label_parts.append(vpc_part)
-        if date:
-            label_parts.append(date)
-        label = " | ".join(label_parts)
-
-        url = str(row.get("url", "")).strip()
-
-        if not url:
-            st.write(f"• {label} — (no file)")
-        else:
-            st.markdown(f"• **{label}** – [📎 File Download]({url})")
-
-# ----- Special Excel: FD Blue Heaven Test Results2.xlsx -----
-st.markdown("---")
-st.subheader("FD Blue Heaven Test Results")
-
-if SPECIAL_EXCEL_PATH.exists():
     try:
-        # 시트가 여러 개면 sheet_name=0 대신 시트 이름을 지정해도 됨
+        # 기본: 첫 번째 시트만 사용 (필요하면 sheet_name="Sheet1" 처럼 이름 지정)
         blue_df = pd.read_excel(SPECIAL_EXCEL_PATH)
 
-        st.caption(
-            "This table is always loaded from FD Blue Heaven Test Results2.xlsx"
-        )
+        st.caption("Always showing contents of FD Blue Heaven Test Results2.xlsx")
         st.dataframe(blue_df, use_container_width=True)
 
+    except FileNotFoundError:
+        st.error("'FD Blue Heaven Test Results2.xlsx' 파일을 앱이 실행되는 폴더에 넣어야 합니다.")
     except Exception as e:
-        st.error(f"Error loading special Excel file: {e}")
-else:
-    st.info("FD Blue Heaven Test Results2.xlsx 파일을 앱 폴더에 넣어야 합니다.")
+        st.error(f"엑셀 파일을 읽는 중 오류가 발생했습니다: {e}")
+
+
+# =========================
+# 실행
+# =========================
+if __name__ == "__main__":
+    main()
