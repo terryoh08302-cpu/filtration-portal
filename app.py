@@ -12,7 +12,6 @@ st.set_page_config(
 )
 
 LOGO_PATH = Path("logo.png")  # 로고 파일(옵션)
-SPECIAL_EXCEL_PATH = Path("FD Blue Heaven Test Results2.xlsx")  # 항상 보여줄 엑셀
 
 
 # =========================
@@ -327,21 +326,31 @@ def main():
             else:
                 st.markdown(f"• **{label}** – [📎 File Download]({url})")
 
-    # 7) FD Blue Heaven Test Results2.xlsx 내용 항상 표시
+    # 7) FD Blue Heaven Test Results2.xlsx 내용 표시 (업로드해서 보기)
     st.markdown("---")
-    st.subheader("FD Blue Heaven Test Results")
+    st.subheader("FD Blue Heaven Test Results (Excel Contents)")
 
-    try:
-        # 기본: 첫 번째 시트만 사용 (필요하면 sheet_name="Sheet1" 처럼 이름 지정)
-        blue_df = pd.read_excel(SPECIAL_EXCEL_PATH)
+    uploaded_excel = st.file_uploader(
+        "FD Blue Heaven Test Results2.xlsx 파일을 업로드하면, 아래에 엑셀 내용이 표시됩니다.",
+        type=["xlsx"],
+        key="blue_heaven_uploader",
+    )
 
-        st.caption("Always showing contents of FD Blue Heaven Test Results2.xlsx")
-        st.dataframe(blue_df, use_container_width=True)
+    if uploaded_excel is not None:
+        try:
+            # 엑셀 내용을 DataFrame으로 읽기
+            blue_df = pd.read_excel(uploaded_excel)
 
-    except FileNotFoundError:
-        st.error("'FD Blue Heaven Test Results2.xlsx' 파일을 앱이 실행되는 폴더에 넣어야 합니다.")
-    except Exception as e:
-        st.error(f"엑셀 파일을 읽는 중 오류가 발생했습니다: {e}")
+            # 파일 이름 보여주기 (확인용)
+            st.caption(f"Showing contents of: **{uploaded_excel.name}**")
+
+            # 엑셀 안에 있는 표 내용 그대로 화면에 표시
+            st.dataframe(blue_df, use_container_width=True)
+
+        except Exception as e:
+            st.error(f"엑셀 파일을 읽는 중 오류가 발생했습니다: {e}")
+    else:
+        st.info("여기에 FD Blue Heaven Test Results2.xlsx 파일을 선택하면, 이 자리에서 안의 내용이 바로 보입니다.")
 
 
 # =========================
