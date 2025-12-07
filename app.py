@@ -3,21 +3,20 @@ import pandas as pd
 from pathlib import Path
 import base64
 
-# ----- 기본 설정 -----  ★여기 수정됨
+# ----- 기본 설정 -----
 st.set_page_config(
     page_title="Filtration Test Report Portal",
-    page_icon="logo.png",   # <- 회사 로고를 탭 아이콘으로 사용
+    page_icon="favicon-32x32.png",  # 브라우저 탭 아이콘
     layout="wide",
 )
 
-# iOS / 브라우저 아이콘 설정  ★여기 추가됨
+# 아이콘 / 홈화면 아이콘 설정
 st.markdown("""
-<link rel="apple-touch-icon" sizes="180x180" href="logo.png">
-<link rel="icon" type="image/png" sizes="32x32" href="logo.png">
-<link rel="icon" type="image/png" sizes="16x16" href="logo.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="manifest" href="site.webmanifest">
 """, unsafe_allow_html=True)
-
-LOGO_PATH = Path("logo.png")  # 같은 폴더에 logo.png 넣으면 사용됨
 
 
 # 개발 중에 CSV 바꿀 때 바로 반영 안 되면,
