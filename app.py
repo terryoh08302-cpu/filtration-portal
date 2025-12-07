@@ -63,10 +63,7 @@ def load_data():
 
 def get_logo_base64() -> str:
     """로고 파일을 base64로 읽어서 HTML <img>에 바로 넣을 수 있게 변환"""
-    if not LOGO_PATH.exists():
-        return ""
-    with open(LOGO_PATH, "rb") as f:
-        return base64.b64encode(f.read()).decode("utf-8")
+   
 
 
 # 데이터 로드
